@@ -152,10 +152,10 @@ function merge() {
 }
 function postComment(message) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield octokit.rest.pulls.createReviewComment({
+        yield octokit.rest.issues.createComment({
             owner: REPO.owner,
             repo: REPO.repo,
-            pull_number: PR_NUMBER,
+            issue_number: PR_NUMBER,
             body: message
         });
     });

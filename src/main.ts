@@ -107,10 +107,10 @@ async function merge(): Promise<void> {
 }
 
 async function postComment(message: string): Promise<void> {
-  await octokit.rest.pulls.createReviewComment({
+  await octokit.rest.issues.createComment({
     owner: REPO.owner,
     repo: REPO.repo,
-    pull_number: PR_NUMBER,
+    issue_number: PR_NUMBER,
     body: message
   })
 }
