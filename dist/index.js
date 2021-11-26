@@ -41,6 +41,7 @@ const github = __importStar(__nccwpck_require__(5438));
 const REPO = github.context.repo;
 const PR_NUMBER = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
 const octokit = github.getOctokit(core.getInput('token'));
+const ERROR_MESSAGE = 'このPRはまだApprovedされてないから、Mergeできませんでした。\n Approvedもらったら、もう一度mergeのラベルをつけてください。';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const can_merge = (yield haveMergeLabel()) && (yield approved());
@@ -89,7 +90,7 @@ function approved() {
                 return true;
             }
         }
-        yield postComment('can not merge because not yet approved.');
+        yield postComment(ERROR_MESSAGE);
         return false;
     });
 }

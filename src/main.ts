@@ -13,6 +13,9 @@ type Review = {
   state?: string
 }
 
+const ERROR_MESSAGE =
+  'このPRはまだApprovedされてないから、Mergeできませんでした。\n Approvedもらったら、もう一度mergeのラベルをつけてください。'
+
 async function run(): Promise<void> {
   const can_merge = (await haveMergeLabel()) && (await approved())
   if (can_merge) {
@@ -53,7 +56,7 @@ async function approved(): Promise<boolean> {
       return true
     }
   }
-  await postComment('can not merge because not yet approved.')
+  await postComment(ERROR_MESSAGE)
   return false
 }
 
