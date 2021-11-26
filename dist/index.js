@@ -43,18 +43,31 @@ const PR_NUMBER = (_a = github.context.payload.pull_request) === null || _a === 
 const octokit = github.getOctokit(core.getInput('token'));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const can_merge = yield canMerge();
+        const can_merge = (yield haveMergeLabel()) && (yield approved());
         if (can_merge) {
             if (yield isSquashPR()) {
                 yield squashMerge();
             }
-            else {
+            else if (yield isNormalPR()) {
                 yield merge();
+            }
+            else {
+                core.info('can not merge without general label.');
             }
         }
         else {
-            core.info('can not merge');
+            core.info('has no merge label or not yet approved.');
         }
+    });
+}
+function getReviews() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data: reviews } = yield octokit.rest.pulls.listReviews({
+            owner: REPO.owner,
+            repo: REPO.repo,
+            pull_number: PR_NUMBER
+        });
+        return reviews;
     });
 }
 function getPRLabels() {
@@ -67,7 +80,22 @@ function getPRLabels() {
         return pr.labels;
     });
 }
-function canMerge() {
+function approved() {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const reviews = yield getReviews();
+        for (const review of reviews) {
+            if (review.state != null) {
+                core.info(review.state);
+            }
+            if ((_a = review.state) === null || _a === void 0 ? void 0 : _a.match(/APPROVED/)) {
+                return true;
+            }
+        }
+        return false;
+    });
+}
+function haveMergeLabel() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const labels = yield getPRLabels();
@@ -85,6 +113,18 @@ function isSquashPR() {
         const labels = yield getPRLabels();
         for (const label of labels) {
             if ((_a = label.name) === null || _a === void 0 ? void 0 : _a.match(/nobunaga|hideyoshi|ieyasu|tsunayoshi/)) {
+                return true;
+            }
+        }
+        return false;
+    });
+}
+function isNormalPR() {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const labels = yield getPRLabels();
+        for (const label of labels) {
+            if ((_a = label.name) === null || _a === void 0 ? void 0 : _a.match(/other/)) {
                 return true;
             }
         }

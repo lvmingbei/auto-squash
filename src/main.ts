@@ -9,17 +9,32 @@ type Label = {
   name?: string
 }
 
+type Review = {
+  state?: string
+}
+
 async function run(): Promise<void> {
-  const can_merge = await canMerge()
+  const can_merge = (await haveMergeLabel()) && (await approved())
   if (can_merge) {
     if (await isSquashPR()) {
       await squashMerge()
-    } else {
+    } else if (await isNormalPR()) {
       await merge()
+    } else {
+      core.info('can not merge without general label.')
     }
   } else {
-    core.info('can not merge')
+    core.info('has no merge label or not yet approved.')
   }
+}
+
+async function getReviews(): Promise<Review[]> {
+  const {data: reviews} = await octokit.rest.pulls.listReviews({
+    owner: REPO.owner,
+    repo: REPO.repo,
+    pull_number: PR_NUMBER
+  })
+  return reviews
 }
 
 async function getPRLabels(): Promise<Label[]> {
@@ -28,11 +43,23 @@ async function getPRLabels(): Promise<Label[]> {
     repo: REPO.repo,
     pull_number: PR_NUMBER
   })
-
   return pr.labels
 }
 
-async function canMerge(): Promise<boolean> {
+async function approved(): Promise<boolean> {
+  const reviews = await getReviews()
+  for (const review of reviews) {
+    if (review.state != null) {
+      core.info(review.state)
+    }
+    if (review.state?.match(/APPROVED/)) {
+      return true
+    }
+  }
+  return false
+}
+
+async function haveMergeLabel(): Promise<boolean> {
   const labels = await getPRLabels()
   for (const label of labels) {
     if (label.name?.match(/merge/)) {
@@ -46,6 +73,16 @@ async function isSquashPR(): Promise<boolean> {
   const labels = await getPRLabels()
   for (const label of labels) {
     if (label.name?.match(/nobunaga|hideyoshi|ieyasu|tsunayoshi/)) {
+      return true
+    }
+  }
+  return false
+}
+
+async function isNormalPR(): Promise<boolean> {
+  const labels = await getPRLabels()
+  for (const label of labels) {
+    if (label.name?.match(/other/)) {
       return true
     }
   }
