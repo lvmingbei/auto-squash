@@ -49,13 +49,11 @@ async function getPRLabels(): Promise<Label[]> {
 async function approved(): Promise<boolean> {
   const reviews = await getReviews()
   for (const review of reviews) {
-    if (review.state != null) {
-      core.info(review.state)
-    }
     if (review.state?.match(/APPROVED/)) {
       return true
     }
   }
+  await postComment('can not merge because not yet approved.')
   return false
 }
 
@@ -106,6 +104,15 @@ async function merge(): Promise<void> {
     pull_number: PR_NUMBER
   })
   core.info('merge')
+}
+
+async function postComment(message: string): Promise<void> {
+  await octokit.rest.pulls.createReviewComment({
+    owner: REPO.owner,
+    repo: REPO.repo,
+    pull_number: PR_NUMBER,
+    body: message
+  })
 }
 
 run()

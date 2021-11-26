@@ -85,13 +85,11 @@ function approved() {
     return __awaiter(this, void 0, void 0, function* () {
         const reviews = yield getReviews();
         for (const review of reviews) {
-            if (review.state != null) {
-                core.info(review.state);
-            }
             if ((_a = review.state) === null || _a === void 0 ? void 0 : _a.match(/APPROVED/)) {
                 return true;
             }
         }
+        yield postComment('can not merge because not yet approved.');
         return false;
     });
 }
@@ -150,6 +148,16 @@ function merge() {
             pull_number: PR_NUMBER
         });
         core.info('merge');
+    });
+}
+function postComment(message) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.rest.pulls.createReviewComment({
+            owner: REPO.owner,
+            repo: REPO.repo,
+            pull_number: PR_NUMBER,
+            body: message
+        });
     });
 }
 run();
